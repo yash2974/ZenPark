@@ -4,8 +4,40 @@ import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import {useRouter} from 'expo-router';
+import { auth } from '@/components/firebaseconfig';
+import { User } from 'firebase/auth';
+
+// auth.signOut().then(() => console.log('Session cleared'));
+
 
 export default function HomeScreen() {
+
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  console.log("uppper")
+  useEffect(()=>{
+    const unsubscribe = onAuthStateChanged(auth,(user)=>{
+      if (user) {
+        // User is logged in
+        console.log('User is logged in:', user);
+        
+        setUser(user); // Store user info
+      } else {
+        // User is not logged in
+        console.log('No user is logged in');
+        setUser(null); // Clear user info
+        router.push('/login-createScreen'); // Redirect to login screen
+      }
+      setLoading(false); // Stop loading once auth state is determined
+    });
+    return()=>unsubscribe();
+
+  },[])
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
