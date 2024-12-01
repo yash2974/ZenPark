@@ -4,7 +4,8 @@ import { Text, Image, StyleSheet, Dimensions, TextInput, TouchableOpacity } from
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/components/firebaseconfig'; // Ensure firebase is set up
+import { auth,db } from '@/components/firebaseconfig'; // Ensure firebase is set up
+import { doc, setDoc } from 'firebase/firestore';
 
 const { width, height } = Dimensions.get('window'); // Get screen width and height
 
@@ -16,6 +17,7 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [role,setRole] = useState('user')
   const router = useRouter();
 
   const handleCreateAccount = async () => {
@@ -29,6 +31,17 @@ export default function CreateAccountScreen() {
       const user = userCredential.user;
 
       console.log('User created successfully:', user);
+      // Save additional user details in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        fullName,
+        phoneNumber,
+        organization,
+        email,
+        role,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log('User details saved to Firestore');
 
       router.push('/login-createScreen');
     }
