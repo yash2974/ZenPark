@@ -1,5 +1,5 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
+import { Image, StyleSheet, Platform ,Text} from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import {useRouter} from 'expo-router';
-import { auth } from '@/components/firebaseconfig';
+import { auth,db } from '@/components/firebaseconfig';
 import { User } from 'firebase/auth';
 
 // auth.signOut().then(() => console.log('Session cleared'));
@@ -17,90 +17,59 @@ export default function HomeScreen() {
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [vehicle, setVehicle] = useState(null);
+  
   const router = useRouter();
   console.log("uppper")
-  useEffect(()=>{
-    const unsubscribe = onAuthStateChanged(auth,(user)=>{
-      if (user) {
-        // User is logged in
-        console.log('User is logged in:', user);
-        
-        setUser(user); // Store user info
-      } else {
-        // User is not logged in
-        console.log('No user is logged in');
-        setUser(null); // Clear user info
-        router.push('/login-createScreen'); // Redirect to login screen
-      }
-      setLoading(false); // Stop loading once auth state is determined
-    });
-    return()=>unsubscribe();
-
-  },[])
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          console.log('User is logged in:', currentUser);
+          setUser(currentUser);
+  
+          // Fetch user data from Firestore
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+  
+          if (userDoc.exists()) {
+            console.log('User data:', userDoc.data());
+            setVehicle(userDoc.data().vehicle); // Assuming the field is named `vehicle`
+          } else {
+            console.log('No such document!');
+          }
+        } else {
+          console.log('No user is logged in');
+          setUser(null);
+          router.push('/login-createScreen'); // Redirect to login screen
+        }
+        setLoading(false);
+      });
+  
+      return unsubscribe; // Return the unsubscribe function
+    };
+  
+    fetchUserData(); // Call the async function
+  }, []);
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ThemedView style={styles.container}>
+      <Text style={styles.text}>Welcome, {user?.email}!</Text>
+      <Text style={styles.text}>Your Vehicle: {vehicle || 'Not available'}</Text>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#FFFAE0',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  text: {
+    fontSize: 18,
+    margin: 10,
+    color: '#000',
   },
 });
