@@ -1,8 +1,6 @@
-import { Image, StyleSheet, Platform ,Text} from 'react-native';
+import { Image, StyleSheet, Platform ,Text, Button} from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
+import {useFonts} from 'expo-font';
 import { ThemedView } from '@/components/ThemedView';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
@@ -13,13 +11,17 @@ import { User } from 'firebase/auth';
 // auth.signOut().then(() => console.log('Session cleared'));
 
 
+
 export default function HomeScreen() {
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [vehicle, setVehicle] = useState(null);
+  const [vehicle, setVehicle] = useState([]);
   
   const router = useRouter();
+  const [fontsLoaded] = useFonts({
+    'MyCustomFont': require('@/assets/fonts/MontserratBold-p781R.otf'), // Path to the .otf file
+  });
   console.log("uppper")
   useEffect(() => {
     const fetchUserData = async () => {
@@ -51,25 +53,58 @@ export default function HomeScreen() {
   
     fetchUserData(); // Call the async function
   }, []);
+  console.log(vehicle)
 
+  if (vehicle.length===0){
+    return(
+      <ThemedView style={styles.container1}>
+      <ThemedView style={styles.box}>
+        <Text style={styles.text}>Oops you dont have any vehicle registered!</Text>
+        <Button title="Add a vehicle" onPress={()=>{router.push('/userDetails')}}></Button>
+      </ThemedView>
+    </ThemedView>
+    )
+  }
+  else{
   return (
     <ThemedView style={styles.container}>
-      <Text style={styles.text}>Welcome, {user?.email}!</Text>
-      <Text style={styles.text}>Your Vehicle: {vehicle || 'Not available'}</Text>
+      <Image
+        source={require('@/assets/images/ZenPark_Transparent.png')}
+        style={styles.logo}
+      />
     </ThemedView>
   );
 }
+}
 
 const styles = StyleSheet.create({
-  container: {
+  container1: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFAE0',
+    
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    backgroundColor: '#FFFAE0',
+    paddingTop: 20,
+    
+  },
+  box:{
+    backgroundColor:"#000C20"
   },
   text: {
     fontSize: 18,
     margin: 10,
-    color: '#000',
+    color: '#FFFAE0',
   },
+  logo: {
+    width: 200, // Adjust width as needed
+    height: 100, // Adjust height as needed
+    resizeMode: 'contain', // Ensures the image scales correctly
+    },
+  
 });
